@@ -3,3 +3,6 @@ uvicorn
 python-multipart
 python-dotenv
 requests
+psycopg[binary]
+google-genai
+supabase
