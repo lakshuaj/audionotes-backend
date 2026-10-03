@@ -132,7 +132,7 @@ def generate_summary(transcript):
     for attempt in range(5):
         try:
             response = gemini_client.models.generate_content(
-                model="gemini-3.8-flash",
+                model="gemini-2.5-flash",
                 contents=f"""
 Summarize the following audio transcript clearly and concisely.
 
