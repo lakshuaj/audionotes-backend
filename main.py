@@ -238,7 +238,7 @@ def process_recording(recording_id, file_path, filename,content_type):
                 max_tokens=1000,
             )
 
-    return response.choices[0].message.content
+            return response.choices[0].message.content
 
         # Save summary and mark as completed
         conn = get_db_connection()
