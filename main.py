@@ -10,6 +10,7 @@ import uuid
 from google import genai
 from google.genai import types
 from supabase import create_client
+from groq import Groq
 
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 
@@ -129,34 +130,33 @@ def transcribe_with_gnani(file_path, filename, content_type):
     return transcript_data["full_transcript"]
 
 def generate_summary(transcript):
-    for attempt in range(5):
-        try:
-            response = gemini_client.models.generate_content(
-                model="gemini-3.8-flash",
-                contents=f"""
+    response = groq_client.chat.completions.create(
+        model="openai/gpt-oss-120b",
+        messages=[
+            {
+                "role": "system",
+                "content": "You summarize audio transcripts clearly and concisely."
+            },
+            {
+                "role": "user",
+                "content": f"""
 Summarize the following audio transcript clearly and concisely.
 
 Give:
-1. A short overview
-2. The main points discussed
-3. Important action items or decisions, if any
+- A short overall summary
+- The main points discussed
+- Important decisions, conclusions, or action items if present
 
 Transcript:
 {transcript}
 """
-            )
+            }
+        ],
+        temperature=0.3,
+        max_tokens=1000,
+    )
 
-            return response.text
-
-        except Exception as e:
-            print(f"Gemini attempt {attempt + 1} failed: {e}")
-
-            if attempt == 4:
-                raise
-
-            wait_time = 2 ** attempt
-            print(f"Retrying Gemini in {wait_time} seconds...")
-            time.sleep(wait_time)
+    return response.choices[0].message.content
 def process_recording(recording_id, file_path, filename,content_type):
     try:
         # Mark as transcribing
@@ -211,8 +211,34 @@ def process_recording(recording_id, file_path, filename,content_type):
         cursor.close()
         conn.close()
         
-        # Generate summary using Gemini
-        summary = generate_summary(transcript)
+        def generate_summary(transcript):
+            response = groq_client.chat.completions.create(
+                model="openai/gpt-oss-120b",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You summarize audio transcripts clearly and concisely."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"""
+        Summarize the following audio transcript clearly and concisely.
+
+        Give:
+        - A short overall summary
+        - The main points discussed
+        - Important decisions, conclusions, or action items if present
+
+        Transcript:
+        {transcript}
+        """
+                    }
+                ],
+                temperature=0.3,
+                max_tokens=1000,
+            )
+
+    return response.choices[0].message.content
 
         # Save summary and mark as completed
         conn = get_db_connection()
@@ -301,6 +327,14 @@ gemini_client = genai.Client(
 )
 
 print("Gemini API key loaded:", bool(gemini_api_key))
+
+groq_api_key = os.getenv("GROQ_API_KEY")
+
+groq_client = Groq(
+    api_key=groq_api_key
+)
+
+print("Groq API key loaded:", bool(groq_api_key))
 # conn = get_db_connection()
 
 # print("Database connected successfully!")
