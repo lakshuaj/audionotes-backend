@@ -240,6 +240,8 @@ def process_recording(recording_id, file_path, filename,content_type):
 
             return response.choices[0].message.content
 
+        summary = generate_summary(transcript)
+
         # Save summary and mark as completed
         conn = get_db_connection()
 
